@@ -26,9 +26,20 @@ class HomeStateMachine extends StateMachine<HomeState?, HomeEvent> {
             imagesSelected: homeRemoveImageEvent.updatedImages);
 
       case HomeBackEvent:
-        HomeBackEvent backEvent =
-            event as HomeBackEvent;
+        HomeBackEvent backEvent = event as HomeBackEvent;
         newState = HomeInitState(imagesSelected: backEvent.images);
+
+      case HomeCameraCaptureEvent:
+        HomeCameraCaptureEvent cameraCaptureEvent =
+            event as HomeCameraCaptureEvent;
+        newState = HomeCameraPreviewState(
+            imagesSelected: cameraCaptureEvent.images, isLoading: false);
+
+      case HomeCameraImageCaptureEvent:
+        HomeCameraPreviewState previewState =
+            getCurrentState() as HomeCameraPreviewState;
+        newState = HomeCameraPreviewState(
+            imagesSelected: previewState.imagesSelected, isLoading: true);
     }
     return newState;
   }
@@ -47,6 +58,13 @@ class HomeImageSelectedState extends HomeState {
 }
 
 class HomeLoadingState extends HomeState {}
+
+class HomeCameraPreviewState extends HomeState {
+  final List<Uint8List> imagesSelected;
+  final bool isLoading;
+  HomeCameraPreviewState(
+      {required this.imagesSelected, required this.isLoading});
+}
 
 abstract class HomeEvent {}
 
@@ -67,3 +85,9 @@ class HomeBackEvent extends HomeEvent {
   HomeBackEvent({required this.images});
 }
 
+class HomeCameraCaptureEvent extends HomeEvent {
+  final List<Uint8List> images;
+  HomeCameraCaptureEvent({required this.images});
+}
+
+class HomeCameraImageCaptureEvent extends HomeEvent {}

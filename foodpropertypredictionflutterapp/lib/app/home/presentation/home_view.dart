@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_clean_architecture/flutter_clean_architecture.dart'
     as fa;
 import 'package:image_picker/image_picker.dart';
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'home_controller.dart';
 import 'home_state_machine.dart';
 
@@ -36,6 +38,10 @@ class HomeViewState extends fa.ResponsiveViewState<HomePage, HomeController> {
             case HomeImageSelectedState:
               return _buildHomeImageSelectedState(
                   controller, currentState as HomeImageSelectedState);
+
+            case HomeCameraPreviewState:
+              return _buildHomeCameraPreviewState(
+                  controller, currentState as HomeCameraPreviewState);
           }
           throw Exception("Unrecognized state $currentStateType encountered");
         },
@@ -46,6 +52,78 @@ class HomeViewState extends fa.ResponsiveViewState<HomePage, HomeController> {
 
   @override
   Widget get watchView => throw UnimplementedError();
+
+  Widget _buildHomeCameraPreviewState(
+      HomeController controller, HomeCameraPreviewState state) {
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () {
+            controller.handleBackButtonPressed(state.imagesSelected);
+          },
+          icon: const Icon(Icons.arrow_back_ios_new),
+        ),
+      ),
+      body: ModalProgressHUD(
+        inAsyncCall: state.isLoading,
+        dismissible: false,
+        child: SingleChildScrollView(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  height: 15,
+                ),
+                if (controller.cameraController != null)
+                  Container(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.all(Radius.circular(15)),
+                      child: AspectRatio(
+                          aspectRatio: 1 /
+                              controller.cameraController!.value.aspectRatio,
+                          child: CameraPreview(controller.cameraController!)),
+                    ),
+                  ),
+                const SizedBox(
+                  height: 25,
+                ),
+                if (controller.cameraController != null)
+                  GestureDetector(
+                    onTap: () {
+                      controller.captureImage(state.imagesSelected);
+                    },
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey,
+                              blurRadius: 10.0,
+                            )
+                          ]),
+                      child:  Icon(
+                        Icons.camera_alt_rounded,
+                        color: state.isLoading
+                            ? Colors.grey
+                            : Color.fromARGB(255, 243, 162, 76),
+                        size: 30,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildHomeLoadingState() {
     return const Scaffold(
@@ -229,7 +307,9 @@ class HomeViewState extends fa.ResponsiveViewState<HomePage, HomeController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  controller.initalizeCamera(state.imagesSelected);
+                },
                 child: Container(
                   width: 200,
                   height: 200,
